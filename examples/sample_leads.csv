@@ -1,0 +1,13 @@
+first_name,last_name,title,company,email,step1_subject,step1_body
+Jordan,Avery,Director of Technology,Northgate School District,jordan.avery@northgate.example,Quick question on your rollout,"Hi Jordan, saw Northgate is expanding 1:1 devices — worth a quick chat?"
+Riley,Chen,IT Coordinator,Northgate School District,riley.chen@northgate.example,Quick question on your rollout,"Hi Riley, saw Northgate is expanding 1:1 devices — worth a quick chat?"
+Sam,Diaz,Network Admin,Northgate School District,sam.diaz@northgate.example,Quick question on your rollout,"Hi Sam, saw Northgate is expanding 1:1 devices — worth a quick chat?"
+Taylor,Okafor,Superintendent,Northgate School District,taylor.okafor@northgate.example,Quick question on your rollout,"Hi Taylor, saw Northgate is expanding 1:1 devices — worth a quick chat?"
+Morgan,Silva,Director of Curriculum,Westbrook County Schools,morgan.silva@westbrook.example,Idea for Westbrook,"Hi Morgan, a few districts your size are trying this — open to it?"
+Casey,Nguyen,Assistant Superintendent,Westbrook County Schools,casey.nguyen@westbrook.example,Idea for Westbrook,"Hi Casey, a few districts your size are trying this — open to it?"
+Jamie,Patel,Technology Director,Westbrook County Schools,jamie.patel@westbrook.example,Idea for Westbrook,"Hi Jamie, a few districts your size are trying this — open to it?"
+Alex,Romano,CIO,Fairview Unified,alex.romano@fairview.example,Fairview + us,"Hi Alex, would this be useful for Fairview's next budget cycle?"
+Drew,Kim,Director of IT,Fairview Unified,drew.kim@fairview.example,Fairview + us,"Hi Drew, would this be useful for Fairview's next budget cycle?"
+info,,General Office,Lakeside Charter,info@lakeside.example,Reaching the right person,"Hi — who handles technology decisions at Lakeside?"
+Quinn,Brooks,Head of School,Lakeside Charter,quinn.brooks@lakeside.example,Reaching the right person,"Hi Quinn, quick idea for Lakeside — open to a short call?"
+Reese,Flores,Operations Lead,Lakeside Charter,reese.flores@lakeside.example,Reaching the right person,"Hi Reese, quick idea for Lakeside — open to a short call?"

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# mailgate outputs & cache
+seg_*/
+mx_cache.json
+.cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
