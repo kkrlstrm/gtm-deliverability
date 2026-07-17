@@ -12,23 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-segment — turn a gateway-classified lead list into a deliverability-safe send plan.
+segment — turn a gateway-classified lead list into a staged rollout plan.
 
-Four best practices, encoded as data (no sending happens here — this produces a plan
-and per-segment CSVs you feed to whatever sequencer you use):
+Four conservative defaults, encoded as data (no sending happens here — this produces a
+plan and per-cohort CSVs you feed to whatever sequencer you use). They encode one
+posture: don't concentrate, expand slowly, prefer the most trusted path. Adapt them to
+your own sending data — every one is a flag, not a law:
 
-  1. Isolate each gateway into its own segment, so a gateway-tripping send to one
-     provider can't taint your reputation with the others.
-  2. Per-company throttle. Within a gateway, Wave 1 gets AT MOST ONE lead per company;
-     the rest go to a Drip segment that trickles in a few new leads per day. Hitting
-     ten inboxes at one company on day one is the fastest way to a domain block.
+  1. Isolate each gateway into its own cohort. The CSV split doesn't create separate
+     sending reputations by itself — it gives you independent launch, separate
+     monitoring, per-cohort sender assignment, and clean attribution when one receiving
+     environment behaves differently.
+  2. Per-company throttle. Within a gateway, Wave 1 gets AT MOST ONE contact per
+     company; the rest go to a Drip cohort that trickles in a few new contacts per day.
+     Concentrating many contacts at one company in a short window is the campaign
+     pattern most likely to resemble a coordinated blast.
   3. Round-robin the drip across companies, so consecutive daily adds hit DIFFERENT
      companies instead of walking one company's directory top to bottom.
   4. Sender policy per gateway: protected gateways (Proofpoint/Mimecast/Barracuda) are
-     tagged `microsoft_only` (Microsoft-to-Microsoft is the most trusted path through
-     them); everything else is `microsoft_preferred`. Guidance carried in the manifest.
+     tagged `microsoft_only` (Microsoft-to-Microsoft is often a comparatively trusted
+     path); everything else is `microsoft_preferred`. Carried in the manifest as
+     metadata — a default heuristic, not enforced here.
 
-The wave/drip split is deterministic: which lead becomes a company's Wave 1 pick is
+The wave/drip split is deterministic: which contact becomes a company's Wave 1 pick is
 chosen by a stable hash of the email, so re-running the same list produces the same
 plan.
 """

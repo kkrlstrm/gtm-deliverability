@@ -171,8 +171,9 @@ def _print_report(plan: dict, items: list[dict], manifest: dict) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="mailgate",
-        description="Segment a cold-email list by the mail gateway that will filter it, "
-                    "then throttle per company so you don't get blacklisted.")
+        description="The pre-send control plane for cold-email campaigns: read the "
+                    "infrastructure receiving your mail, then turn a flat list into a "
+                    "gateway-aware, account-throttled rollout plan. Sends nothing.")
     p.add_argument("--version", action="version", version=f"mailgate {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
 

@@ -1,22 +1,35 @@
 # gtm-deliverability
 
-> **Segment a cold-email list by the mail gateway that will actually filter it — then
-> throttle per company so you don't get blacklisted.** Sender-agnostic. Nothing sends.
+> **The pre-send control plane for cold-email campaigns.**
+> Inspect the infrastructure *receiving* your mail, then turn a flat list into a
+> gateway-aware, account-throttled rollout plan. Sender-agnostic. Sends nothing.
 
-Your cold email isn't judged by the recipient's mailbox. It's judged by the **secure
-email gateway** sitting in front of it — Proofpoint, Mimecast, Barracuda. Those
-gateways blacklist a sending domain *fast* when you hit ten inboxes at one company on
-day one, send everything from a single domain, or move too quickly. Once you're on
-their blocklist, every future send to every company behind that gateway lands in
-quarantine.
+Most outbound tools manage the infrastructure **sending** your email — sending
+accounts, domains, daily volume, warmup, cadence. Almost none account for the
+infrastructure **receiving** it.
 
-`gtm-deliverability` looks up the receiving gateway for every lead **before** you load
-anyone into a sequencer, then fragments the list into deliverability-safe segments:
-each gateway isolated, one lead per company in Wave 1, the rest dripped in — round-
-robined so consecutive daily sends hit *different* companies.
+But a list routed through Proofpoint, Mimecast, Barracuda, Microsoft 365 and Google
+Workspace should not be launched as one homogeneous campaign. Each receiving
+environment filters differently, and account-heavy lists carry a second, independent
+risk: contacting several people at the same company in a short window can make
+otherwise reasonable outreach *resemble a coordinated blast* — regardless of which
+gateway is in front.
 
-It doesn't send anything. It produces segmented CSVs + a manifest you feed to whatever
-you already use — Instantly, Smartlead, Lemlist, Email Bison, your own SMTP.
+`gtm-deliverability` reads the receiving infrastructure behind every recipient domain
+and converts a raw audience into a staged execution plan:
+
+- **separate cohorts by receiving gateway**, so each can be launched, monitored, and
+  sender-assigned independently;
+- **place at most one contact per company** into the first wave;
+- **hold the rest for a round-robin, account-level drip**, so consecutive sends hit
+  different companies;
+- **attach conservative cadence and sender-policy defaults** you can adapt to your own
+  data;
+- **export plain CSV + JSON** for the sequencer you already use.
+
+It does not send email, verify addresses, or promise inbox placement. It gives outbound
+teams the thing most sequencers are missing: **recipient-side campaign controls before
+the first email is sent.**
 
 ```console
 $ mailgate classify harvard.edu stanford.edu gmail.com jpmorgan.com microsoft.com
@@ -31,34 +44,59 @@ That's a live DNS lookup — no API key, no account, real MX records.
 
 ---
 
-## Why this exists
+## The missing layer
 
-Deliverability is the least-shared, most-painful part of outbound, and almost every
-list-building tool ignores the one fact that decides whether you land: **who filters
-the mail.** Two lists of the same size behave completely differently if one is 60%
-Proofpoint districts and the other is Google-hosted startups. Blast both the same way
-and you'll torch your sending domain on the first.
+A sequencer sees **500 rows**. It schedules them almost entirely off sender-side knobs:
+which inbox, which domain, how many per day, what warmup curve.
 
-Most "warmup" and "throttle" features operate blind — a flat send rate across the
-whole list. This operates on the actual receiving infrastructure:
+A recipient-aware system sees the same list as **140 companies across five receiving
+environments, with concentrated account exposure and a staged expansion decision to
+make.** That second view is what this tool builds — before anything is loaded into a
+sequencer.
 
-- **A gateway you can't see is still filtering you.** A school can run Microsoft 365
-  behind Proofpoint; the lowest-preference MX is Outlook, but Proofpoint is what
-  screens inbound. This tool checks *every* MX host and lets the gateway win.
-- **The fastest way to a domain block is bulk-loading one company.** So Wave 1 sends to
-  at most one person per company; everyone else drips.
-- **Walking a directory top-to-bottom looks like a scrape.** So the drip is round-
-  robined across companies.
+Think of it as an early **campaign compiler**: raw audience in, execution plan out,
+where the plan is derived from recipient infrastructure and account-level concentration
+rather than from send-rate alone.
+
+## What it controls (and what it doesn't)
+
+This is **recipient-side campaign risk**, not deliverability as a whole. Whether an
+individual email reaches the inbox depends on authentication (SPF/DKIM/DMARC), domain
+reputation and sending history, copy, complaint rates, list quality and engagement —
+most of which live on *your* side and are out of scope here.
+
+What this tool controls is narrower and genuinely yours to control: **how your campaign
+architecture treats fundamentally different receiving environments, and how
+concentrated it is within any single account.** It stops a flat list from being blasted
+as though every recipient sat behind the same filter.
 
 ## Before / after
 
-**Before** — load the whole list into a sequencer, set one global send rate, hope.
-Wave-one bounces from the biggest accounts, the gateway flags the domain, and every
-later send to that gateway silently quarantines.
+**Before** — the whole list goes into a sequencer under one global send rate. The
+biggest accounts get hit several times in the opening days, the loudest cohort's
+bounces are indistinguishable from the quiet one's, and by the time a receiving
+environment reacts you can't tell which cohort caused it.
 
-**After** — `mailgate segment` splits the list into isolated, per-company-throttled
-Wave 1 + Drip segments per gateway. You launch Wave 1, confirm it's bounce-clean, then
-start the Drip. The gateway never sees a burst.
+**After** — `mailgate segment` produces isolated, per-company-throttled **Wave 1 + Drip**
+segments per gateway. You launch Wave 1, watch that cohort specifically, and only expand
+into its Drip once it's clean. Each receiving environment is a separately observable,
+separately haltable cohort — so expansion is a deliberate decision, not a side effect of
+the send rate.
+
+## Who it's for
+
+Strongest fit:
+
+- **GTM engineers** running programmatic, multi-account outbound.
+- **Agencies** operating several sending domains/inboxes who need per-cohort control.
+- **Teams targeting enterprise, education, government, or regulated organizations** —
+  exactly where secure gateways (Proofpoint/Mimecast/Barracuda) cluster.
+- **Any list with multiple contacts per account**, where concentration is the real risk.
+- Operators who already have verification + sending infrastructure but lack
+  **campaign-level** risk controls.
+
+Probably overkill for a solo founder emailing one person at each 50-person startup —
+one contact per company, mostly Google/Microsoft, little to stage.
 
 ## Install
 
@@ -114,14 +152,15 @@ You get, in `./seg_<name>/`:
 
 | File | What it is |
 |---|---|
-| `<gateway>_wave1.csv` | One lead per company, per gateway — send these first |
+| `<gateway>_wave1.csv` | One contact per company, per gateway — launch these first |
 | `<gateway>_drip.csv` | The rest, round-robined across companies — start after Wave 1 is clean |
-| `mx_audit.csv` | Every domain → its gateway, MX host, and lead count |
-| `manifest.json` | The full plan: segments, cadence, sender policy, counts |
+| `mx_audit.csv` | Every domain → its gateway, MX host, and contact count |
+| `manifest.json` | The full plan: cohorts, cadence, sender policy, counts |
 
-Each segment CSV has your original columns **plus** `mx_provider` / `mx_host` /
-`mx_error`. Load them into your sequencer in order: **Wave 1 first, confirm no bounces,
-then the matching Drip.** That sequencing *is* the throttle.
+Each segment CSV keeps your original columns **plus** `mx_provider` / `mx_host` /
+`mx_error`. Load them into your sequencer in order: **Wave 1 first, watch that cohort,
+then the matching Drip.** That sequencing is where the throttle actually happens — see
+[Gateway isolation](#gateway-isolation-what-the-split-actually-buys).
 
 ## How gateway classification works
 
@@ -137,42 +176,80 @@ hostnames against known gateway fingerprints. Buckets:
 | `unknown` | NXDOMAIN / no MX / timeout / malformed — **never guessed into a gateway** |
 
 **A protected gateway wins even when Microsoft or Google is the lowest-preference MX**,
-because the gateway is what screens inbound. Classification is deterministic and cached
-per domain (`~/.cache/gtm-deliverability/mx_cache.json`), so re-runs on the same list
-are near-instant — real lists cluster on a handful of domains. The fingerprint list in
-`mailgate/classify.py` is a plain table; add your own in a line.
+because the gateway is what screens inbound — a school can run Microsoft 365 behind
+Proofpoint. Classification is deterministic and cached per domain
+(`~/.cache/gtm-deliverability/mx_cache.json`), so re-runs on the same list are near-
+instant — real lists cluster on a handful of domains. The fingerprint list in
+[`mailgate/classify.py`](mailgate/classify.py) is a plain table; add your own in a line.
 
 ## The wave / drip model
 
-Within each gateway:
+Within each gateway cohort:
 
-- **Wave 1** = at most **one lead per company**. Which lead is chosen is a stable hash
-  of the email, so the plan is reproducible.
-- **Drip** = everyone else, **round-robined across companies** so consecutive daily
-  adds hit different companies. Recommended `5` new leads/day (`--drip-per-day`).
-- **Sender policy** per gateway is carried in the manifest: protected gateways are
-  tagged `microsoft_only` (Microsoft→Microsoft is the most trusted path through them),
-  everything else `microsoft_preferred`.
-- **Role inboxes** (`info@`, `board@`, …) are counted per segment — they behave
-  differently and often route straight to quarantine.
+- **Wave 1** = at most **one contact per company**. Which contact is chosen is a stable
+  hash of the email, so the plan is fully reproducible.
+- **Drip** = everyone else, **round-robined across companies** so consecutive daily adds
+  hit different companies. Recommended `5` new contacts/day (`--drip-per-day`).
+- **Sender policy** per gateway is carried in the manifest as metadata, not enforced
+  here (see below).
+- **Role inboxes** (`info@`, `board@`, …) are counted per cohort — they behave
+  differently and often route straight to a quarantine.
 
-None of this sends mail or picks your sending accounts — it's guidance encoded as data,
-and the sequencing is enforced by *you* loading Wave 1 before the Drip.
+## Gateway isolation — what the split actually buys
+
+Be precise about this: **splitting the list by gateway does not by itself create
+separate sending reputations.** If you send every cohort from the same domains and
+inboxes, the reputation those domains earn is still shared.
+
+What the split gives you is **operational control**:
+
+- **independent launch** — start one cohort without committing the others;
+- **separate monitoring** — a Proofpoint cohort's bounce rate isn't averaged into a
+  Google one;
+- **per-cohort sender assignment** — point different sending domains/inboxes at
+  different cohorts *if you have them*;
+- **haltable expansion** — stop drilling into a cohort that's reacting badly without
+  touching the rest;
+- **clean attribution** — when one receiving environment behaves differently, you can
+  see it and act on it.
+
+The reputation benefit is real but *indirect*: it comes from the controlled, observable
+rollout the split enables, not from the CSV boundaries themselves.
+
+## Defaults vs. guarantees
+
+The cadence (5-day gaps), drip rate (5/day), Wave-1-is-one-per-company rule, and the
+`microsoft_only` / `microsoft_preferred` sender policies are **opinionated, conservative
+defaults — not deliverability laws.** They encode a single posture: *don't concentrate,
+expand slowly, and prefer the most trusted path into a protected gateway.*
+
+For example, protected gateways get a stricter default (`microsoft_only`) because
+Microsoft-to-Microsoft is often a comparatively trusted path — but that's a heuristic to
+adapt to your own sending data, not a universal rule. Filtering and reputation decisions
+at these gateways draw on global vendor intelligence, per-tenant configuration,
+recipient-domain policy, and engagement signals you don't control. Treat every default
+here as a starting policy: they're all flags (`--gap-days`, `--drip-per-day`,
+`--company-key`, …).
 
 ## Works with any sender
 
 The output is plain CSV + JSON. Point it at Instantly, Smartlead, Lemlist, Email Bison,
-HubSpot sequences, or your own SMTP loop. `gtm-deliverability` owns the *decision* of
-who to send to when; your sequencer owns the send.
+HubSpot sequences, or your own SMTP loop. `gtm-deliverability` owns the *decision* of who
+to send to when; your sequencer owns the send. The "sends nothing" boundary is
+deliberate — it keeps this composable with whatever you already run instead of becoming
+another platform to migrate into.
 
-## Not in scope (on purpose)
+## Scope & limitations
 
-- **It doesn't send, warm up inboxes, or write copy.** It's the pre-send segmentation
-  layer, not an ESP.
-- **It doesn't verify addresses.** Run your bounce-checker first; feed it clean emails.
+- **It doesn't send, warm up inboxes, or write copy.** It's the pre-send planning layer,
+  not an ESP.
+- **It doesn't verify addresses or predict inbox placement.** Run your bounce-checker
+  first; feed it clean emails.
+- **It doesn't create sending reputation.** It gives you the control surface to manage
+  reputation deliberately (see [Gateway isolation](#gateway-isolation-what-the-split-actually-buys)).
 - **Compliance is yours.** Cold outreach carries CAN-SPAM and, for government/regulated
-  recipients, additional obligations. This tool makes your *sending pattern* safer; it
-  does not make a list legal to email. That judgment stays with you.
+  recipients, additional obligations. This tool makes your *campaign architecture* safer;
+  it does not make a list legal to email.
 
 ## CLI reference
 

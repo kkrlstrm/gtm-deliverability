@@ -14,13 +14,14 @@
 """
 classify — resolve a domain's MX records and classify the receiving mail gateway.
 
-The point: cold email doesn't get filtered by the mailbox provider, it gets filtered
-by the **secure email gateway** sitting in front of it — Proofpoint, Mimecast,
-Barracuda. Those gateways blacklist fast if you hammer one company, send from one
-domain, or move too quickly. Before you load anyone into a sequencer, look up each
-recipient domain's MX records and bucket it by the gateway that will actually screen
-the inbound mail, so you can isolate those buckets, throttle them, and route them
-through the right sending inboxes.
+The point: cold email is often filtered less by the mailbox provider than by the
+**secure email gateway** sitting in front of it — Proofpoint, Mimecast, Barracuda.
+Different receiving environments filter differently, so a flat list shouldn't be
+launched as one homogeneous campaign. Before you load anyone into a sequencer, look up
+each recipient domain's MX records and bucket it by the gateway that will actually
+screen the inbound mail — so each cohort can be launched, monitored, and sender-
+assigned independently. This module only classifies; the throttling lives in
+`segment.py`.
 
 Classification is deterministic and offline-testable: `classify_domain` takes an
 injectable resolver, so tests pass a fake and never touch the network. A per-domain

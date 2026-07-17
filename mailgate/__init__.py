@@ -11,7 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""mailgate — segment a cold-email list by receiving mail gateway, then throttle it safely."""
+"""mailgate — the pre-send control plane for cold-email campaigns.
+
+Reads the infrastructure receiving your mail and turns a flat list into a gateway-aware,
+account-throttled rollout plan. Sender-agnostic; sends nothing.
+"""
 
 __version__ = "0.1.0"
 

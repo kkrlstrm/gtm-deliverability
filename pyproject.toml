@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gtm-deliverability"
 version = "0.1.0"
-description = "Segment a cold-email list by the mail gateway that will filter it, then throttle per company so you don't get blacklisted."
+description = "The pre-send control plane for cold-email campaigns: gateway-aware, account-throttled rollout plans from a flat lead list. Sender-agnostic, sends nothing."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "Apache-2.0" }
