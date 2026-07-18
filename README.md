@@ -1,5 +1,8 @@
 # gtm-deliverability
 
+<!-- portfolio-status -->
+**Status:** Reference implementation — extracted from a private production GTM system; tenant data, provider adapters, and company-specific policy stay private. · **Layer:** Channel infrastructure · **[Portfolio map ›](https://github.com/kkrlstrm)**
+
 > **The pre-send control plane for cold-email campaigns.**
 > Inspect the infrastructure *receiving* your mail, then turn a flat list into a
 > gateway-aware, account-throttled rollout plan. Sender-agnostic. Sends nothing.
@@ -275,3 +278,15 @@ pytest -q
 ## License
 
 Apache 2.0 — see [LICENSE](LICENSE).
+
+---
+
+<!-- portfolio-footer -->
+## Where this fits
+
+Part of a portfolio of **governed, AI-native GTM systems** — reference implementations and reusable patterns extracted from a private production stack. In that system this is the recipient-side pre-send control plane the list passes through before it's launched.
+
+**Full portfolio map → [github.com/kkrlstrm](https://github.com/kkrlstrm)**
+
+Works with:
+- [gtm-pipeline](https://github.com/kkrlstrm/gtm-pipeline) — produces the list this stages
