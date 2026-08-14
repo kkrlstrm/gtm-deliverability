@@ -1,11 +1,22 @@
 # gtm-deliverability
 
 <!-- portfolio-status -->
-**Status:** Reference implementation — extracted from a private production GTM system; tenant data, provider adapters, and company-specific policy stay private. · **Layer:** Channel infrastructure · **[Portfolio map ›](https://github.com/kkrlstrm)**
+**Status:** Production-derived open-source core — extracted from a private production GTM system; tenant data, provider adapters, and company-specific policy stay private. · **Layer:** Channel infrastructure · **[Portfolio map ›](https://github.com/kkrlstrm)**
 
-> **The pre-send control plane for cold-email campaigns.**
-> Inspect the infrastructure *receiving* your mail, then turn a flat list into a
-> gateway-aware, account-throttled rollout plan. Sender-agnostic. Sends nothing.
+> **Recipient-side campaign control for cold email.**
+> Classify the mail infrastructure behind each recipient, isolate gateway cohorts, and
+> throttle account exposure before launch. Export a reviewable rollout plan to the
+> sequencer you already use; this tool never sends on your behalf.
+
+```mermaid
+flowchart LR
+    A[Flat lead list] --> B[Resolve recipient MX]
+    B --> C[Gateway-aware cohorts]
+    C --> D[Wave 1: one contact per account]
+    C --> E[Drip: round-robin remainder]
+    D --> F[CSV + JSON for your sequencer]
+    E --> F
+```
 
 Most outbound tools manage the infrastructure **sending** your email — sending
 accounts, domains, daily volume, warmup, cadence. Almost none account for the
@@ -18,8 +29,7 @@ risk: contacting several people at the same company in a short window can make
 otherwise reasonable outreach *resemble a coordinated blast* — regardless of which
 gateway is in front.
 
-`gtm-deliverability` reads the receiving infrastructure behind every recipient domain
-and converts a raw audience into a staged execution plan:
+`gtm-deliverability` turns a raw audience into a staged execution plan:
 
 - **separate cohorts by receiving gateway**, so each can be launched, monitored, and
   sender-assigned independently;
@@ -30,9 +40,9 @@ and converts a raw audience into a staged execution plan:
   data;
 - **export plain CSV + JSON** for the sequencer you already use.
 
-It does not send email, verify addresses, or promise inbox placement. It gives outbound
-teams the thing most sequencers are missing: **recipient-side campaign controls before
-the first email is sent.**
+The result is a reviewable plan, not another sender. It does not send email, verify
+addresses, or promise inbox placement. It gives outbound teams **recipient-side campaign
+controls before the first email is sent.**
 
 ```console
 $ mailgate classify harvard.edu stanford.edu gmail.com jpmorgan.com microsoft.com
@@ -47,7 +57,7 @@ That's a live DNS lookup — no API key, no account, real MX records.
 
 ---
 
-## The missing layer
+## The missing control plane
 
 A sequencer sees **500 rows**. It schedules them almost entirely off sender-side knobs:
 which inbox, which domain, how many per day, what warmup curve.
@@ -60,6 +70,12 @@ sequencer.
 Think of it as an early **campaign compiler**: raw audience in, execution plan out,
 where the plan is derived from recipient infrastructure and account-level concentration
 rather than from send-rate alone.
+
+| A sequencer sees | `gtm-deliverability` sees |
+|---|---|
+| 500 rows under one global send rate | 140 accounts across five receiving environments |
+| Sender-side volume knobs | Gateway cohorts and account-level concentration |
+| One broad launch | A Wave 1 to observe, then a deliberate Drip expansion |
 
 ## What it controls (and what it doesn't)
 
@@ -101,11 +117,9 @@ Strongest fit:
 Probably overkill for a solo founder emailing one person at each 50-person startup —
 one contact per company, mostly Google/Microsoft, little to stage.
 
-## Install
+## Install from source
 
 ```bash
-pip install gtm-deliverability        # once published
-# or from source:
 git clone https://github.com/kkrlstrm/gtm-deliverability
 cd gtm-deliverability && pip install -e .
 ```
@@ -234,13 +248,12 @@ recipient-domain policy, and engagement signals you don't control. Treat every d
 here as a starting policy: they're all flags (`--gap-days`, `--drip-per-day`,
 `--company-key`, …).
 
-## Works with any sender
+## Bring your own sequencer
 
 The output is plain CSV + JSON. Point it at Instantly, Smartlead, Lemlist, Email Bison,
-HubSpot sequences, or your own SMTP loop. `gtm-deliverability` owns the *decision* of who
-to send to when; your sequencer owns the send. The "sends nothing" boundary is
-deliberate — it keeps this composable with whatever you already run instead of becoming
-another platform to migrate into.
+HubSpot sequences, or your own SMTP loop. `gtm-deliverability` owns the *decision* of
+who to send to and when; your sequencer owns the send. That boundary is deliberate: adopt
+recipient-side controls without migrating your sending stack.
 
 ## Scope & limitations
 
@@ -284,7 +297,10 @@ Apache 2.0 — see [LICENSE](LICENSE).
 <!-- portfolio-footer -->
 ## Where this fits
 
-Part of a portfolio of **governed, AI-native GTM systems** — reference implementations and reusable patterns extracted from a private production stack. In that system this is the recipient-side pre-send control plane the list passes through before it's launched.
+Part of a portfolio of **governed, AI-native GTM systems** — production-derived
+open-source cores and reusable patterns extracted from a private production stack. In
+that system this is the recipient-side pre-send control plane the list passes through
+before it's launched.
 
 **Full portfolio map → [github.com/kkrlstrm](https://github.com/kkrlstrm)**
 
