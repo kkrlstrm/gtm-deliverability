@@ -1,7 +1,7 @@
 # gtm-deliverability
 
 <!-- portfolio-status -->
-**Status:** Production-derived open-source core — extracted from a private production GTM system; tenant data, provider adapters, and company-specific policy stay private. · **Layer:** Channel infrastructure · **[Portfolio map ›](https://github.com/kkrlstrm)**
+**Status:** Production-derived open-source core — extracted from a private internal GTM platform in production use; tenant data, provider adapters, and company-specific policy stay private. · **Layer:** Workload: deliverability · **[Portfolio map ›](https://github.com/kkrlstrm)**
 
 > **Recipient-side campaign control for cold email.**
 > Classify the mail infrastructure behind each recipient, isolate gateway cohorts, and
