@@ -3,6 +3,8 @@
 """Classification is deterministic and offline — every test injects the fake resolver."""
 from __future__ import annotations
 
+from datetime import date
+
 from mailgate import classify
 
 
@@ -18,6 +20,30 @@ def test_protected_gateway_wins_over_microsoft(resolver):
 def test_mimecast_and_barracuda(resolver):
     assert _classify("district.example", resolver) == "mimecast"
     assert _classify("township.example", resolver) == "barracuda"
+
+
+def test_sophos_wins_over_microsoft(resolver):
+    assert "sophos" in classify.PROTECTED
+    assert _classify("village.example", resolver) == "sophos"
+
+
+def test_stale_cached_label_is_rebucketed():
+    """A domain cached as "other" before Sophos was recognised must read as sophos now,
+    without a new lookup."""
+    host = "mx-01-us-east-2.prod.hydra.sophos.com"
+    cache = {"village.example": {
+        "domain": "village.example", "provider": "other", "mx_host": host, "pref": 10,
+        "all_mx": [f"10:{host}"], "error": "", "resolved_at": date.today().isoformat()}}
+    rec = classify.classify_domain("village.example", cache, _Boom())
+    assert rec["provider"] == "sophos"
+    assert rec["mx_host"] == host
+
+
+def test_cached_error_is_left_alone():
+    rec0 = {"domain": "gone.example", "provider": "unknown", "mx_host": "", "pref": None,
+            "all_mx": [], "error": "NXDOMAIN", "resolved_at": date.today().isoformat()}
+    rec = classify.classify_domain("gone.example", {"gone.example": rec0}, _Boom())
+    assert rec["provider"] == "unknown"
 
 
 def test_microsoft_and_google(resolver):
