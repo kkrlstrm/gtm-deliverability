@@ -29,7 +29,7 @@ your own sending data — every one is a flag, not a law:
      pattern most likely to resemble a coordinated blast.
   3. Round-robin the drip across companies, so consecutive daily adds hit DIFFERENT
      companies instead of walking one company's directory top to bottom.
-  4. Sender policy per gateway: protected gateways (Proofpoint/Mimecast/Barracuda) are
+  4. Sender policy per gateway: protected gateways (Proofpoint/Mimecast/Barracuda/Sophos) are
      tagged `microsoft_only` (Microsoft-to-Microsoft is often a comparatively trusted
      path); everything else is `microsoft_preferred`. Carried in the manifest as
      metadata — a default heuristic, not enforced here.
@@ -49,7 +49,7 @@ from . import classify
 PROTECTED = classify.PROTECTED
 PROVIDER_ORDER = PROTECTED + ("microsoft", "google", "other", "unknown")
 PROVIDER_LABEL = {
-    "proofpoint": "Proofpoint", "mimecast": "Mimecast", "barracuda": "Barracuda",
+    "proofpoint": "Proofpoint", "mimecast": "Mimecast", "barracuda": "Barracuda", "sophos": "Sophos",
     "microsoft": "Microsoft", "google": "Google", "other": "Other", "unknown": "Unknown",
 }
 

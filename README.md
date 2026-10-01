@@ -22,7 +22,7 @@ Most outbound tools manage the infrastructure **sending** your email — sending
 accounts, domains, daily volume, warmup, cadence. Almost none account for the
 infrastructure **receiving** it.
 
-But a list routed through Proofpoint, Mimecast, Barracuda, Microsoft 365 and Google
+But a list routed through Proofpoint, Mimecast, Barracuda, Sophos, Microsoft 365 and Google
 Workspace should not be launched as one homogeneous campaign. Each receiving
 environment filters differently, and account-heavy lists carry a second, independent
 risk: contacting several people at the same company in a short window can make
@@ -109,7 +109,7 @@ Strongest fit:
 - **GTM engineers** running programmatic, multi-account outbound.
 - **Agencies** operating several sending domains/inboxes who need per-cohort control.
 - **Teams targeting enterprise, education, government, or regulated organizations** —
-  exactly where secure gateways (Proofpoint/Mimecast/Barracuda) cluster.
+  exactly where secure gateways (Proofpoint/Mimecast/Barracuda/Sophos) cluster.
 - **Any list with multiple contacts per account**, where concentration is the real risk.
 - Operators who already have verification + sending infrastructure but lack
   **campaign-level** risk controls.
@@ -187,7 +187,7 @@ hostnames against known gateway fingerprints. Buckets:
 
 | Bucket | Meaning |
 |---|---|
-| `proofpoint` / `mimecast` / `barracuda` | Protected secure gateways — the hard-to-reach ones |
+| `proofpoint` / `mimecast` / `barracuda` / `sophos` | Protected secure gateways — the hard-to-reach ones |
 | `microsoft` / `google` | The big hosted mail platforms |
 | `other` | MX resolved but matched no known fingerprint |
 | `unknown` | NXDOMAIN / no MX / timeout / malformed — **never guessed into a gateway** |
@@ -247,6 +247,12 @@ at these gateways draw on global vendor intelligence, per-tenant configuration,
 recipient-domain policy, and engagement signals you don't control. Treat every default
 here as a starting policy: they're all flags (`--gap-days`, `--drip-per-day`,
 `--company-key`, …).
+
+Throttling does not help with every gateway. **Sophos rejects on sender-domain
+reputation, not volume**: its bounces read `blocked using uri.*.sophosxl.com`, meaning the
+sending *domain* is on Sophos's URI list and every inbox on that domain is refused. If a
+Sophos Wave 1 shows that error, pause the Drip and move to a different sending domain;
+waiting it out or sending slower does not clear it.
 
 ## Bring your own sequencer
 

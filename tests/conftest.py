@@ -42,6 +42,8 @@ def fake_records():
         "county.example":      [(5, "county-example.mail.protection.outlook.com.")],
         "district.example":    [(10, "us-smtp-inbound-1.mimecast.com."), (20, "us-smtp-inbound-2.mimecast.com.")],
         "township.example":    [(5, "cust01234.ess.barracudanetworks.com.")],
+        # Sophos listed beside an Outlook MX — the gateway filters inbound, so it must win
+        "village.example":     [(0, "village-example.mail.protection.outlook.com."), (10, "mx-01-us-east-2.prod.hydra.sophos.com.")],
         "startup.example":     [(1, "aspmx.l.google.com."), (5, "alt1.aspmx.l.google.com.")],
         "misc.example":        [(10, "mail.misc.example.")],
         "gone.example":        "NXDOMAIN",

@@ -15,7 +15,7 @@
 classify — resolve a domain's MX records and classify the receiving mail gateway.
 
 The point: cold email is often filtered less by the mailbox provider than by the
-**secure email gateway** sitting in front of it — Proofpoint, Mimecast, Barracuda.
+**secure email gateway** sitting in front of it — Proofpoint, Mimecast, Barracuda, Sophos.
 Different receiving environments filter differently, so a flat list shouldn't be
 launched as one homogeneous campaign. Before you load anyone into a sequencer, look up
 each recipient domain's MX records and bucket it by the gateway that will actually
@@ -31,7 +31,7 @@ handful of domains).
 Buckets (a "protected" gateway wins even when Microsoft/Google is the lowest-pref MX,
 because the gateway is what filters inbound):
 
-    proofpoint | mimecast | barracuda      (the hard-to-reach secure gateways)
+    proofpoint | mimecast | barracuda | sophos   (the hard-to-reach secure gateways)
     microsoft  | google                    (the big hosted mail platforms)
     other                                   (MX resolved, matched nothing above)
     unknown                                 (NXDOMAIN / no MX / timeout / bad domain)
@@ -52,7 +52,7 @@ import dns.resolver
 CACHE_PATH = Path.home() / ".cache" / "gtm-deliverability" / "mx_cache.json"
 
 # Provider buckets the segmenter reasons about.
-PROTECTED = ("proofpoint", "mimecast", "barracuda")
+PROTECTED = ("proofpoint", "mimecast", "barracuda", "sophos")
 PROVIDERS = PROTECTED + ("microsoft", "google", "other", "unknown")
 
 # Ordered substring patterns matched against lowercased MX hostnames.
@@ -62,6 +62,10 @@ _PATTERNS: list[tuple[str, tuple[str, ...]]] = [
     ("proofpoint", ("pphosted.com", "ppe-hosted.com", ".pphosted", ".ppe-hosted")),
     ("mimecast", ("mimecast.com", ".mimecast")),
     ("barracuda", ("barracudanetworks.com", ".ess.barracuda", "cudasvc.com", "barracuda.com")),
+    # Sophos Email (Central): mx-01-<region>.prod.hydra.sophos.com. Before this pattern existed,
+    # Sophos-fronted domains were filed under "other" (or "microsoft" when an Outlook MX sat
+    # beside it) and shared a cohort with ordinary recipients.
+    ("sophos", ("sophos.com",)),
     ("microsoft", (".mail.protection.outlook.com", ".olc.protection.outlook.com", "outlook.com")),
     ("google", ("aspmx.l.google.com", ".google.com", "googlemail.com", "aspmx.l.google", ".googlemail")),
 ]
@@ -91,7 +95,7 @@ def _classify_hosts(hosts: list[str]) -> str:
     matches = [m for m in (_match_provider(h) for h in hosts) if m]
     if not matches:
         return "other" if hosts else "unknown"
-    for p in PROTECTED:  # proofpoint > mimecast > barracuda, deterministic
+    for p in PROTECTED:  # proofpoint > mimecast > barracuda > sophos, deterministic
         if p in matches:
             return p
     if "microsoft" in matches:
@@ -158,7 +162,7 @@ def classify_domain(domain: str, cache: dict, resolver=None, *,
 
     cached = cache.get(domain)
     if cached and not refresh and not _is_stale(cached, ttl_days):
-        return cached
+        return _rebucket(cached)
 
     if resolver is None:
         resolver = make_resolver()
@@ -181,6 +185,25 @@ def classify_domain(domain: str, cache: dict, resolver=None, *,
     }
     cache[domain] = rec
     return rec
+
+
+def _rebucket(rec: dict) -> dict:
+    """Re-derive provider + mx_host from a cached record's MX hosts.
+
+    The cache stores the provider label, so a pattern added to _PATTERNS would otherwise
+    not reach any domain cached before the change until its TTL expired (Sophos domains
+    kept reading as "other"). Bucketing is pure, so recompute it on every cache hit.
+    """
+    if rec.get("error"):
+        return rec
+    hosts = [h.split(":", 1)[1] if ":" in h else h for h in rec.get("all_mx") or []]
+    if not hosts:
+        return rec
+    provider = _classify_hosts(hosts)
+    if provider == rec.get("provider"):
+        return rec
+    gw_host = next((h for h in hosts if _match_provider(h) == provider), None)
+    return dict(rec, provider=provider, mx_host=gw_host or hosts[0])
 
 
 def _is_stale(rec: dict, ttl_days: int) -> bool:

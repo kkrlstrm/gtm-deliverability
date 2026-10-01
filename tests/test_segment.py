@@ -90,3 +90,13 @@ def test_company_key_falls_back_to_domain():
                                "company_or_domain") == "acmeinc"
     assert segment.company_key({"email": "a@acme.example", "company": "Acme Inc"},
                                "domain") == "@acme.example"
+
+
+def test_every_classified_provider_is_ordered_and_labelled():
+    """A gateway the classifier can emit but the segmenter can't order or label would be
+    classified and then not isolated."""
+    from mailgate import classify
+    assert segment.PROTECTED == classify.PROTECTED
+    assert set(classify.PROVIDERS) <= set(segment.PROVIDER_ORDER)
+    assert set(segment.PROVIDER_ORDER) <= set(segment.PROVIDER_LABEL)
+    assert segment.sender_policy("sophos") == "microsoft_only"
